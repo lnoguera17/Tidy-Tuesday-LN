@@ -1,4 +1,5 @@
 # Tidy-Tuesday-LN
-A repository for my Tidy Tuesday Projects
+
+A repo to practice my visualizations, analysis and modelling skills with TidyTuesday data. 
 
 https://github.com/rfordatascience/tidytuesday
