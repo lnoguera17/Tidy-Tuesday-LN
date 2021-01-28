@@ -102,7 +102,8 @@ plastics %>%
   scale_x_continuous(labels = comma) 
 
 
-plastics %>%  
+country_summary <- plastics %>%  
+  mutate(country = str_to_title(country)) %>% 
   filter(parent_company != "null" & parent_company != "Grand Total" & parent_company != "NULL" & parent_company != "Unbranded" & country != "EMPTY") %>% 
   group_by(country, year) %>% 
   summarise(num_events_total = sum(num_events),
@@ -114,13 +115,34 @@ plastics %>%
   mutate(abs_change_vol = total_volunteers_2020 - total_volunteers_2019,
          abs_change_events = num_events_total_2020 - num_events_total_2019,
          abs_change_total = grand_total_2020 - grand_total_2019,
-         rel_change_total = ((grand_total_2020 - grand_total_2019)/ grand_total_2019) * 100) %>% 
-  mutate(country = fct_reorder(country, abs_change_total)) %>%
-  filter(abs_change_total < -500 | abs_change_total > 500) %>% 
-  ggplot(aes(country, abs_change_total)) +
-  geom_point() +
-  geom_segment(y = 0, yend= abs_change_total) +
-  scale_y_continuous(n.breaks = 5) 
+         rel_change_total = ((grand_total_2020 - grand_total_2019)/ grand_total_2019) * 100) 
+
+
+diff_plastic_rec <- country_summary %>% 
+  mutate(country = fct_reorder(country, abs_change_total),
+         change = if_else(abs_change_total > 0, "POS", "NEG")) %>%
+  slice_max(abs(abs_change_total), n = 20) %>% 
+  ggplot(aes(country, abs_change_total, color = change)) +
+  geom_point(show.legend = F) +
+  geom_hline(yintercept = 0, linetype = 'dashed', color = "navy blue") +
+  scale_y_continuous(limits = c(-30000, 30000), breaks = seq(-30000, 30000, 10000), labels = comma) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(x = NULL,
+       y = "Change in # of Plastic Recovered")
+  
+diff_vol <- country_summary %>% 
+  mutate(country = fct_reorder(country, abs_change_total),
+         change = if_else(abs_change_total > 0, "POS", "NEG")) %>%
+  slice_max(abs(abs_change_total), n = 20) %>% 
+  ggplot(aes(country, abs_change_total, color = change)) +
+  geom_point(show.legend = F) +
+  geom_hline(yintercept = 0, linetype = 'dashed', color = "navy blue") +
+  scale_y_continuous(limits = c(-30000, 30000), breaks = seq(-30000, 30000, 10000), labels = comma) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(x = NULL,
+       y = "Change in # of Plastic Recovered")
 
 
 ```
