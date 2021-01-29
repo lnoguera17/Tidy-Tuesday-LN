@@ -1,0 +1,185 @@
+---
+title: "Wine Ratings - Text Mining"
+author: "Luis Noguera"
+date: "1/29/2021"
+output: html_document
+---
+
+# Data Load and Cleaning
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidytext)
+library(tidymodels)
+library(tidyverse)
+library(textrecipes)
+
+wine_ratings <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-05-28/winemag-data-130k-v2.csv") 
+
+# Some Cleaning Process
+wine_ratings <- wine_ratings %>% 
+  extract(title, "year", "(20\\d\\d)", convert = TRUE, remove = FALSE) %>%
+  mutate(year = ifelse(year < 1900, NA, year)) %>%
+  filter(!is.na(price)) %>%
+  select(-X1)  %>%
+  mutate(review_id = row_number())
+
+wine_ratings 
+```
+
+# Data Exploration
+
+```{r}
+
+# Solid normal distribution for points
+wine_ratings %>% 
+  ggplot(aes(points)) +
+  geom_histogram(alpha = 0.8, fill = 'navy blue') +
+  theme_minimal()
+
+
+```
+
+
+```{r}
+
+wine_df <- wine_ratings %>% 
+  select(points, description) %>% 
+  na.omit() %>% 
+  distinct()
+
+wine_df %>% 
+  unnest_tokens(word, description) %>% 
+  count(word, sort =  T) %>% 
+  anti_join(stop_words)
+
+```
+
+# Building a Tidy Model 
+
+
+```{r}
+
+set.seed(415)
+wine_split <- initial_split(wine_df)
+wine_train <- training(wine_split)
+wine_test <- testing(wine_split)
+
+
+wine_vfolds <- vfold_cv(wine_train, strata = points, v = 5)
+wine_vfolds
+
+
+```
+
+# Data Pre-Processing
+
+```{r}
+
+wine_rec <- recipe(points ~ ., data = wine_train) %>% 
+  step_tokenize(description) %>% 
+  step_stopwords(description) %>% 
+  step_tokenfilter(description, max_tokens = 1e3) %>% 
+  step_tfidf(description) 
+
+wine_prep <- wine_rec %>% prep()
+
+wine_juiced <- wine_prep %>%  juice()
+
+
+
+```
+
+
+# Model Fitting 
+
+```{r}
+
+lasso_spec <- linear_reg(penalty = tune(), mixture = 1) %>%
+  set_engine("glmnet")
+
+wine_wf <- workflow() %>%
+  add_recipe(wine_rec) %>%
+  add_model(lasso_spec)
+
+
+```
+
+
+```{r}
+lambda_grid <- grid_regular(penalty(range = c(-10, 0)), levels = 50)
+```
+
+
+```{r}
+
+doParallel::registerDoParallel()
+set.seed(1234)
+
+lasso_rs <- tune_grid(
+  wine_wf,
+  resamples = wine_vfolds,
+  grid = lambda_grid
+)
+
+lasso_rs
+
+
+```
+
+# Model Evaluation
+
+```{r}
+
+autoplot(lasso_rs) +
+  theme_minimal()
+
+
+show_best(lasso_rs, "rmse")
+
+```
+
+
+```{r}
+
+
+best_rmse <- select_best(lasso_rs, "rmse")
+
+final_lasso <- finalize_workflow(wine_wf, best_rmse)
+final_lasso
+
+
+wine_final <- last_fit(final_lasso, wine_split)
+collect_metrics(wine_final)
+
+```
+
+
+```{r}
+
+library(vip)
+
+wine_vip <- pull_workflow_fit(wine_final$.workflow[[1]]) %>%
+  vi()
+
+
+wine_vip %>%
+  group_by(Sign) %>%
+  slice_max(abs(Importance), n = 20) %>%
+  ungroup() %>%
+  mutate(
+    Variable = str_remove(Variable, "tfidf_description_"),
+    Importance = abs(Importance),
+    Variable = fct_reorder(Variable, Importance),
+    Sign = if_else(Sign == "POS", "Describing Good Wine", "Describing Not So Good Wine")
+  ) %>%
+  ggplot(aes(Importance, Variable, fill = Sign)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~Sign, scales = "free") +
+  labs(y = NULL)
+
+
+
+```
+
+
