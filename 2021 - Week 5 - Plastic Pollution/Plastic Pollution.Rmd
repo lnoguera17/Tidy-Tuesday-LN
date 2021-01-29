@@ -18,6 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(tidytuesdayR)
+library(scales)
 
 ```
 
@@ -64,42 +65,6 @@ Explore the data and process it into a nice format for plotting! Access each dat
 
 ```{r Wrangle}
 
-library(scales)
-plastics %>%  count(parent_company, sort = T)
-
-# By Parent Company
-plastics %>%  
-  filter(parent_company != "null" & parent_company != "Grand Total" & parent_company != "NULL" & parent_company != "Unbranded") %>% 
-  arrange(desc(grand_total)) %>% 
-  group_by(parent_company) %>% 
-  summarise(grand_total = sum(grand_total),
-            total_volunteers = sum(volunteers),
-            count_per_vol = grand_total / total_volunteers) %>% 
-  mutate(parent_company = fct_reorder(parent_company, grand_total)) %>% 
-  arrange(desc(grand_total)) %>% 
-  head(25) %>% 
-  ggplot(aes(grand_total, parent_company)) +
-  geom_point() +
-  scale_x_continuous(labels = comma) 
-  
-plastics
-
-
-# By Country 
-plastics %>%  
-  filter(parent_company != "null" & parent_company != "Grand Total" & parent_company != "NULL" & parent_company != "Unbranded" & country != "EMPTY") %>% 
-  arrange(desc(grand_total)) %>% 
-  group_by(country) %>% 
-  summarise(grand_total = sum(grand_total),
-            total_volunteers = sum(volunteers),
-            count_per_vol = grand_total / grand_total) %>% 
-  mutate(country = str_to_title(country),
-         country = fct_reorder(country, grand_total)) %>% 
-  arrange(desc(grand_total)) %>% 
-  head(25) %>% 
-  ggplot(aes(grand_total, country)) +
-  geom_point() +
-  scale_x_continuous(labels = comma) 
 
 
 country_summary <- plastics %>%  
@@ -115,34 +80,32 @@ country_summary <- plastics %>%
   mutate(abs_change_vol = total_volunteers_2020 - total_volunteers_2019,
          abs_change_events = num_events_total_2020 - num_events_total_2019,
          abs_change_total = grand_total_2020 - grand_total_2019,
-         rel_change_total = ((grand_total_2020 - grand_total_2019)/ grand_total_2019) * 100) 
+         rel_change_total = ((grand_total_2020 - grand_total_2019)/ grand_total_2019) * 100) %>% 
+  filter(country != "Empty")
 
 
-diff_plastic_rec <- country_summary %>% 
+diff_cols <- c("POS" = "#0843a5", "NEG" = "#88060d")
+
+change_plastic <- country_summary %>% 
   mutate(country = fct_reorder(country, abs_change_total),
          change = if_else(abs_change_total > 0, "POS", "NEG")) %>%
   slice_max(abs(abs_change_total), n = 20) %>% 
   ggplot(aes(country, abs_change_total, color = change)) +
-  geom_point(show.legend = F) +
-  geom_hline(yintercept = 0, linetype = 'dashed', color = "navy blue") +
+  geom_point(show.legend = F, size = 3, alpha = 0.5) +
+  geom_hline(yintercept = 0, linetype = 'dashed', color = "black") +
   scale_y_continuous(limits = c(-30000, 30000), breaks = seq(-30000, 30000, 10000), labels = comma) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90)) +
+  scale_color_manual(values = diff_cols) +
+  theme_minimal(base_size = 12, base_family = "Times New Roman") +
+  theme(plot.background = element_rect("#ffffff"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank()) +
   labs(x = NULL,
-       y = "Change in # of Plastic Recovered")
+       y = "Difference in Pieces of Plastic",
+       title = "Countries with greater change in pieces of plastic recovered from 2019 to 2020") +
+  coord_flip()
   
-diff_vol <- country_summary %>% 
-  mutate(country = fct_reorder(country, abs_change_total),
-         change = if_else(abs_change_total > 0, "POS", "NEG")) %>%
-  slice_max(abs(abs_change_total), n = 20) %>% 
-  ggplot(aes(country, abs_change_total, color = change)) +
-  geom_point(show.legend = F) +
-  geom_hline(yintercept = 0, linetype = 'dashed', color = "navy blue") +
-  scale_y_continuous(limits = c(-30000, 30000), breaks = seq(-30000, 30000, 10000), labels = comma) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90)) +
-  labs(x = NULL,
-       y = "Change in # of Plastic Recovered")
 
 
 ```
@@ -165,8 +128,10 @@ Save your image for sharing. Be sure to use the `#TidyTuesday` hashtag in your p
 ```{r}
 
 # This will save your most recent plot
-ggsave(
-  filename = "My TidyTuesday Plot.png",
-  device = "png")
+ggsave(change_plastic,
+  filename = "Plastic Recovered 2019-2020.png",
+  height = 12,
+  width = 9,
+  dpi = 300)
 
 ```
