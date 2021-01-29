@@ -84,6 +84,18 @@ country_summary <- plastics %>%
   filter(country != "Empty")
 
 
+
+
+```
+
+
+# Visualize
+
+Using your processed dataset, create your unique visualization.
+
+```{r Visualize}
+
+
 diff_cols <- c("POS" = "#0843a5", "NEG" = "#88060d")
 
 change_plastic <- country_summary %>% 
@@ -106,18 +118,6 @@ change_plastic <- country_summary %>%
        title = "Countries with greater change in pieces of plastic recovered from 2019 to 2020") +
   coord_flip()
   
-
-
-```
-
-
-# Visualize
-
-Using your processed dataset, create your unique visualization.
-
-```{r Visualize}
-
-
   
 ```
 
