@@ -13,6 +13,7 @@ library(tidytext)
 library(tidymodels)
 library(tidyverse)
 library(textrecipes)
+library(stringr)
 
 wine_ratings <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-05-28/winemag-data-130k-v2.csv") 
 
@@ -22,9 +23,12 @@ wine_ratings <- wine_ratings %>%
   mutate(year = ifelse(year < 1900, NA, year)) %>%
   filter(!is.na(price)) %>%
   select(-X1)  %>%
-  mutate(review_id = row_number())
+  mutate(review_id = row_number(),
+         description = str_replace_all(description, "[:digit:]", "")) 
 
 wine_ratings 
+
+
 ```
 
 # Data Exploration
@@ -35,7 +39,10 @@ wine_ratings
 wine_ratings %>% 
   ggplot(aes(points)) +
   geom_histogram(alpha = 0.8, fill = 'navy blue') +
-  theme_minimal()
+  theme_minimal() +
+  labs(y = NULL,
+       x = NULL) +
+  scale_y_continuous(labels = comma)
 
 
 ```
@@ -48,10 +55,13 @@ wine_df <- wine_ratings %>%
   na.omit() %>% 
   distinct()
 
-wine_df %>% 
+word_count_description <- wine_df %>% 
   unnest_tokens(word, description) %>% 
   count(word, sort =  T) %>% 
-  anti_join(stop_words)
+  anti_join(stop_words) %>% 
+  mutate(word = str_to_title(as.factor(word))) %>% 
+  rename("Variable" = "word") 
+  
 
 ```
 
@@ -159,25 +169,57 @@ collect_metrics(wine_final)
 
 library(vip)
 
+
+colors = c("Words Describing Good Wine" = "#2d3252",
+          "Words Describing Not So Good Wine" = "#a61a30")
+
 wine_vip <- pull_workflow_fit(wine_final$.workflow[[1]]) %>%
   vi()
 
 
-wine_vip %>%
+Word_importance_table <- wine_vip %>%
   group_by(Sign) %>%
   slice_max(abs(Importance), n = 20) %>%
   ungroup() %>%
   mutate(
     Variable = str_remove(Variable, "tfidf_description_"),
     Importance = abs(Importance),
-    Variable = fct_reorder(Variable, Importance),
-    Sign = if_else(Sign == "POS", "Describing Good Wine", "Describing Not So Good Wine")
-  ) %>%
-  ggplot(aes(Importance, Variable, fill = Sign)) +
-  geom_col(show.legend = FALSE) +
-  facet_wrap(~Sign, scales = "free") +
-  labs(y = NULL)
+    Variable = str_to_title(Variable),
+    Sign = if_else(Sign == "POS", "Words Describing Good Wine", "Words Describing Not So Good Wine"),
+  ) 
 
+words_full_table <-  word_count_description %>% 
+  inner_join(Word_importance_table) %>% 
+  mutate(Variable = fct_reorder(Variable, Importance)) %>% 
+  filter(Variable != "Wine")
+  
+
+
+words_full_table %>% 
+  ggplot(aes(Importance, Variable, fill = Sign)) +
+  geom_segment(aes(x = 0, xend = Importance, y = Variable, yend = Variable),  show.legend = FALSE) +
+  geom_point(aes(size= n, color = Sign), inherit.aes = T, alpha = 0.7, show.legend = F) +
+  facet_wrap(~Sign, scales = "free") +
+  scale_color_manual(values = colors) +
+  labs(y = NULL) +
+  theme_minimal() +
+  theme(panel.grid.minor = element_blank())
+
+
+
+```
+
+# Representing the accuracy of the Lasso model
+
+```{r}
+
+
+collect_predictions(wine_final) %>%
+  ggplot(aes(points, .pred)) +
+  geom_abline(lty = 2, color = "gray50", size = 1.2) +
+  geom_point(size = 1.5, alpha = 0.3, color = "#88060d") +
+  coord_fixed() +
+  theme_minimal()
 
 
 ```
