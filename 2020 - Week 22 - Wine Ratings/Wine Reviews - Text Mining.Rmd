@@ -194,7 +194,7 @@ words_full_table <-  word_count_description %>%
   
 
 
-words_full_table %>% 
+most_important_words <- words_full_table %>% 
   ggplot(aes(Importance, Variable, fill = Sign)) +
   geom_segment(aes(x = 0, xend = Importance, y = Variable, yend = Variable),  show.legend = FALSE) +
   geom_point(aes(size= n, color = Sign), inherit.aes = T, alpha = 0.7, show.legend = F) +
@@ -202,23 +202,33 @@ words_full_table %>%
   scale_color_manual(values = colors) +
   labs(y = NULL) +
   theme_minimal() +
-  theme(panel.grid.minor = element_blank())
-
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank()) +
+  labs(title = "Most Important Words Used in Wine Reviews")
+       
+most_important_words
 
 
 library(ggrepel)
-?ggrepel()
-wine_vip %>%  
+
+word_importance_graph <- wine_vip %>%  
   mutate(Variable = str_remove(Variable, "tfidf_description_"),
          Variable = str_to_title(Variable)) %>% 
   inner_join(word_count_description) %>% 
-  ggplot(aes(n, Importance, color = Sign, label = Variable)) +
-  geom_point(alpha = 0.7, show.legend = F) +
-  geom_text_repel() +
-  scale_x_log10() +
-  theme_minimal() 
+  filter(Variable != "Wine") %>% 
+  ggplot(aes(n, Importance, label = Variable)) +
+  geom_point(aes(color = Sign), alpha = 0.7, show.legend = F) +
+  scale_color_manual(values = c("NEG" = "#a61a30", "POS" = "#2d3252")) +
+  geom_text(aes(label = Variable), color = '#595959', check_overlap = TRUE, vjust = 1.5) +
+  geom_hline(yintercept = 0, color = "#595959") +
+  scale_x_log10(labels =  comma) +
+  labs(x = 'Log of Frequency',
+       y = 'Importance') +
+  theme_minimal(base_family = "") +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_blank()) 
 
-?geom_text_repel()
+
 ```
 
 # Representing the accuracy of the Lasso model
@@ -226,12 +236,34 @@ wine_vip %>%
 ```{r}
 
 
-collect_predictions(wine_final) %>%
+model_res <- collect_predictions(wine_final) %>%
   ggplot(aes(points, .pred)) +
   geom_abline(lty = 2, color = "gray50", size = 1.2) +
   geom_point(size = 1.5, alpha = 0.3, color = "#88060d") +
   coord_fixed() +
   theme_minimal()
+
+
+```
+
+# Saving the images 
+
+
+```{r}
+
+ggsave(word_importance_graph,
+  filename = "all words importance.png",
+  height = 20,
+  width = 32,
+  units = 'cm',
+  dpi = 150)
+
+ggsave(most_important_words, 
+       filename = "top important words.png",
+       height = 24,
+       width = 20,
+       units = 'cm',
+       dpi = 200)
 
 
 ```
