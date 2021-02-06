@@ -41,42 +41,54 @@ This includes a data dictionary, source, and a link to an article on the data.
 
 ```{r Readme, eval = interactive()}
 
-tt$hbcu_all
+all <- tt$hbcu_all
 
 tt$hs_students 
 ```
 
 
-# Glimpse Data
-
-Take an initial look at the format of the data available.
-
-```{r Glimpse}
-
-tt %>% 
-  map(glimpse)
-
-```
-
-# Wrangle
-
-Explore the data and process it into a nice format for plotting! Access each dataset by name by using a dollarsign after the `tt` object and then the name of the data set.
-
-```{r Wrangle}
-
-
-
-```
-
-
-# Visualize
-
-Using your processed dataset, create your unique visualization.
 
 ```{r Visualize}
 
+library(scales)
+library(extrafont)
+library(ggtext)
+
+
+theme_LN_w6 <- theme(
+  panel.background = element_blank(),
+  plot.margin = margin(30,20,20,30),
+  plot.title = element_text(hjust = 0.5, size = 24, colour = "grey30", family = "Times" ,margin = margin(0,30,20,30)),
+   plot.subtitle = element_textbox_simple(halign = 0.5, size = 16, colour = "grey30", family = "Times", margin = margin(0,30,20,30)),
+  legend.position = "top",
+  legend.key = element_rect(fill = 'transparent'),
+  legend.title = element_blank(),
+  panel.grid.major.x  = element_line(colour = 'gray', size = 0.1),
+  panel.grid.major.y  = element_blank()
+  
+)
+
+
+
+all %>% 
+  pivot_longer(-Year,
+               names_to = "metric",
+               values_to = "value") %>%  
+  filter(metric %in% c("Males", "Females")) %>% 
+  ggplot(aes(Year, value, color = metric)) +
+  scale_y_continuous(labels = comma, limits = c(90000,250000)) +
+  geom_line(size = 1.5, alpha = .7) +
+  scale_colour_manual(values = c("#4d648d", "#96ceb4")) +
+   theme_LN_w6 +
+  labs(title = "39 Years of HBCU Enrollments",
+       subtitle = "<span style = 'color:#96ceb4;'>Male</span> and <span style = 'color:#4d648d;'>Female</span> Students",
+       y = NULL,
+       x = NULL)
 
   
+  
+
+
 ```
 
 # Save Image
