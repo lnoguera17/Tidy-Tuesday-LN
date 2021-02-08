@@ -1,0 +1,134 @@
+---
+title: "TidyTemplate"
+date: 2021-02-04
+output: html_output
+---
+
+# TidyTuesday
+
+Join the R4DS Online Learning Community in the weekly #TidyTuesday event!
+Every week we post a raw dataset, a chart or article related to that dataset, and ask you to explore the data.
+While the dataset will be “tamed”, it will not always be tidy! As such you might need to apply various R for Data Science techniques to wrangle the data into a true tidy format.
+The goal of TidyTuesday is to apply your R skills, get feedback, explore other’s work, and connect with the greater #RStats community!
+As such we encourage everyone of all skills to participate!
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidytuesdayR)
+
+```
+
+# Load the weekly Data
+
+Dowload the weekly data and make available in the `tt` object.
+
+```{r Load}
+
+tt <- tt_load("2021-02-02")
+
+tt
+
+```
+
+
+# Readme
+
+Take a look at the readme for the weekly data to get insight on the dataset.
+This includes a data dictionary, source, and a link to an article on the data.
+
+```{r Readme, eval = interactive()}
+
+all <- tt$hbcu_all
+
+tt$hs_students 
+```
+
+
+
+```{r Visualize}
+
+library(scales)
+library(extrafont)
+library(ggtext)
+
+plot_text <- "#276678"
+background <- "#fff3e6"
+
+theme_LN_w6 <- theme(
+
+   
+   plot.background = element_rect(fill= background, colour = NA),
+   panel.background = element_rect(fill = NA),
+
+   
+   plot.margin = margin(30,20,20,30),
+   plot.title = element_text(hjust = 0.5, size = 24, colour = plot_text, family = "Times" ,margin = margin(0,30,20,30)),
+   plot.subtitle = element_textbox_simple(halign = 0.5, size = 16, colour = plot_text, family = "Times", margin = margin(0,30,20,30)),
+   legend.position = "top",
+   legend.box.background = element_rect(colour = "gray30"),
+   legend.background = element_blank(),
+   plot.caption = element_text(hjust = 0.5, size = 10, colour = plot_text, family = "Times", margin = margin(30,30,0,30)),
+  
+  panel.grid.minor.x = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  panel.grid.major.x  = element_line(colour = '#314e52', size = 0.1),
+  panel.grid.major.y  = element_blank(),
+  
+  axis.title.y = element_text(color = plot_text),
+  axis.ticks.x = element_line(color = plot_text),
+  axis.ticks.y = element_line(color = plot_text),
+  axis.text = element_text(family = "Times" ,size = 8, colour = plot_text)
+)
+
+
+
+male_female_data <- all %>% 
+  pivot_longer(-Year,
+               names_to = "metric",
+               values_to = "value") %>%  
+  filter(metric %in% c("Males", "Females"))
+
+
+ggplot() +
+  geom_line(data = male_female_data, aes(Year, value, color = metric),size = 1.5, alpha = .6, show.legend = F) +
+  scale_y_continuous(labels = comma, limits = c(90000,250000)) +
+  geom_text(data = male_female_data %>% filter(Year == last(Year)),
+                                               aes(label = scales::comma(value),
+                                                   x = Year ,
+                                                 y = value + 5000,
+                                                   color = metric), show.legend = F) +
+  geom_text(data = male_female_data %>% filter(Year == first(Year)),
+                                               aes(label = scales::comma(value),
+                                                   x = Year ,
+                                                 y = value - 5000,
+                                                   color = metric), show.legend = F) +
+  scale_colour_manual(values = c("#f2a154", "#5eaaa8")) +
+   theme_LN_w6 +
+  labs(title = "39 Years of Historically Black Colleges and Universities",
+       subtitle = "<span style = 'color:#5eaaa8;'>**Male**</span> and <span style = 'color:#f2a154;'>**Female**</span> Students",
+       y = "Enrollments",
+       x = NULL,
+       caption = "Source: National Center for Education Statistics | Graph by: Luis Noguera ")
+
+  
+  
+
+
+```
+
+# Save Image
+
+Save your image for sharing. Be sure to use the `#TidyTuesday` hashtag in your post on twitter! 
+
+```{r}
+
+# This will save your most recent plot
+ggsave(
+  filename = "Ma.png",
+  plot = last_plot()
+  device = "png")
+
+```
