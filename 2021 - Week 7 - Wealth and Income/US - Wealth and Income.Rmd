@@ -48,6 +48,8 @@ race_wealth <- tt$race_wealth
 
 student_debt <- tt$student_debt 
 
+retirement_df <- tt$retirement
+
 ```
 
 
@@ -80,16 +82,49 @@ home_owner %>%
   scale_y_continuous(label = percent, n.breaks = 5, limits = c(0,1))
 
 race_wealth %>% 
-  filter(type == "Average") %>% 
+  filter(type == "Average",
+         race != "Non-White",
+         year >= 1990) %>% 
   ggplot(aes(year, wealth_family, color = race)) +
   geom_line() 
 
 
 student_debt %>% 
-  ggplot(aes(year, loan_debt_pct, color = race)) +
-  geom_line()
+  inner_join(retirement_df) %>% 
+  filter(race == "Black") %>% 
+  ggplot() +
+  geom_area(aes(year, retirement), fill = "blue") +
+  geom_area(aes(year, loan_debt), fill = "red") +
+  scale_y_continuous(labels = comma)
 
 
+
+plot_text_color <- "black"
+plot_background <- ""
+font <- "Times"
+
+theme_week7 <- theme(
+  
+  plot.title = element_text(hjust = 0.5, vjust = 5, size = 24, colour = plot_text_color, family = font ,margin = margin(0,30,20,30)),
+  plot.margin = margin(50,30,30,50),
+  
+  panel.grid.minor.x = element_blank(),
+  panel.grid.minor.y = element_blank()
+)
+
+student_debt %>% 
+  inner_join(retirement_df) %>% 
+  ggplot() +
+  geom_area(aes(year, retirement), fill = "blue") +
+  geom_area(aes(year, loan_debt), fill = "red") +
+  scale_y_continuous(labels = comma) +
+  facet_wrap(~race, scales = "free_x") +
+  labs(y = "Adjusted to 2016 Dollars",
+       x = NULL,
+       title = "A Story of Wealth Disparity in US") +
+  theme_minimal() +
+  theme_week7
+  
 
 ```
 
