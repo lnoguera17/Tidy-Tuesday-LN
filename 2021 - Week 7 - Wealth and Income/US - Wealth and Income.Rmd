@@ -18,6 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(tidytuesdayR)
+library(ggtext)
 
 ```
 
@@ -99,33 +100,51 @@ student_debt %>%
 
 
 
-plot_text_color <- "black"
-plot_background <- ""
+plot_text_color <- "#dddddd"
+plot_background <- "#222831"
 font <- "Times"
 
 theme_week7 <- theme(
   
-  plot.title = element_text(hjust = 0.5, vjust = 5, size = 24, colour = plot_text_color, family = font ,margin = margin(0,30,20,30)),
-  plot.margin = margin(50,30,30,50),
+  plot.background = element_rect(fill= plot_background),
+   
+   
+  plot.title = element_text(hjust = 0.5, size = 24, colour =  plot_text_color, family = font),
   
-  panel.grid.minor.x = element_blank(),
-  panel.grid.minor.y = element_blank()
+  plot.subtitle = element_textbox_simple(halign = 0.5, size = 16, vjust = -5, colour = plot_text_color, family = font),
+  
+  plot.margin = margin(40,35,35,40),
+  
+  panel.grid = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank(),
+
+  axis.title.y = element_text(color = plot_text_color),
+  axis.ticks.x = element_line(color = plot_text_color),
+  axis.ticks.y = element_line(color = plot_text_color),
+  axis.text = element_text(family = font ,size = 10, colour = plot_text_color),
+  
+  plot.caption  = element_markdown(hjust = 0, lineheight = 0.5, color = plot_text_color),
+  strip.text = element_text(colour = plot_text_color, size = 14),
+  
 )
 
 student_debt %>% 
   inner_join(retirement_df) %>% 
   ggplot() +
-  geom_area(aes(year, retirement), fill = "blue") +
-  geom_area(aes(year, loan_debt), fill = "red") +
-  scale_y_continuous(labels = comma) +
+  geom_area(aes(year, retirement), fill = "#37739e") +
+  geom_area(aes(year, loan_debt), fill = "#f05454") +
+  scale_y_continuous(labels = dollar, n.breaks = 4) +
   facet_wrap(~race, scales = "free_x") +
-  labs(y = "Adjusted to 2016 Dollars",
+  labs(y = "USD Adjusted to 2016",
        x = NULL,
-       title = "A Story of Wealth Disparity in US") +
+       title = "A Story of Wealth Disparity in US",
+       subtitle = "<span style = 'color:#37739e;'>**Average Retirement Savings**</span> vs <span style = 'color:#f05454;'>**Average Student Loan Debt**</span>",
+       caption = "Plot by: Luis Noguera <br> Source: US Census and Urban Institute <br> **#tidytuesday**") +
   theme_minimal() +
   theme_week7
   
-
+tt
 ```
 
 
