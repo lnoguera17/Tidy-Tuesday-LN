@@ -18,7 +18,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(tidytuesdayR)
-
+library(ggtext)
+library(scales)
+library(showtext)
 ```
 
 # Load the weekly Data
@@ -48,6 +50,8 @@ race_wealth <- tt$race_wealth
 
 student_debt <- tt$student_debt 
 
+retirement_df <- tt$retirement
+
 ```
 
 
@@ -68,28 +72,64 @@ Explore the data and process it into a nice format for plotting! Access each dat
 
 ```{r Wrangle}
 
-income_distribution %>%  
-  filter(race != "All Races") %>% 
-  ggplot(aes(year, income_mean, color = race)) +
-  geom_line() +
+student_debt %>% 
+  inner_join(retirement_df) %>% 
+  filter(race == "Black") %>% 
+  ggplot() +
+  geom_area(aes(year, retirement), fill = "blue") +
+  geom_area(aes(year, loan_debt), fill = "red") +
   scale_y_continuous(labels = comma)
 
-home_owner %>%
-  ggplot(aes(year, home_owner_pct, color = race)) +
-  geom_line() +
-  scale_y_continuous(label = percent, n.breaks = 5, limits = c(0,1))
-
-race_wealth %>% 
-  filter(type == "Average") %>% 
-  ggplot(aes(year, wealth_family, color = race)) +
-  geom_line() 
 
 
-student_debt %>% 
-  ggplot(aes(year, loan_debt_pct, color = race)) +
-  geom_line()
+plot_text_color <- "#dddddd"
+plot_background <- "#222831"
+font <- "Merriweather"
 
+theme_week7 <- theme(
+  
+  plot.background = element_rect(fill= plot_background),
+   
+   
+  plot.title = element_text(hjust = 0.5, size = 24, colour =  plot_text_color, family = font),
+  
+  plot.subtitle = element_textbox_simple(halign = 0.5, size = 14, colour = plot_text_color, family = font, margin = margin(0,0,50,0, unit = 'pt')),
+  
+  plot.margin = margin(30,20,20,30),
+  
+  panel.grid = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank(),
 
+  axis.title.y = element_text(color = plot_text_color),
+  axis.ticks.x = element_line(color = plot_text_color),
+  axis.ticks.y = element_line(color = plot_text_color),
+  axis.text = element_text(family = font ,size = 10, colour = plot_text_color),
+  axis.title = element_text(family = font ,size = 10, colour = plot_text_color),
+  
+  
+  plot.caption  = element_markdown(hjust = 0, lineheight = 0.2, color = plot_text_color, family = font),
+  strip.text = element_text(colour = plot_text_color, size = 16, family = font, face = 'bold'),
+  
+)
+
+wealth_income_plot <- student_debt %>% 
+  inner_join(retirement_df) %>% 
+  ggplot() +
+  geom_area(aes(year, retirement), fill = "#37739e") +
+  geom_line(aes(year, retirement), size = 0.8, color = "#1377bf") +
+  geom_area(aes(year, loan_debt), fill = "#f05454") +
+  geom_line(aes(year, loan_debt), size = 0.8, color = "#d12c2c") +
+  scale_y_continuous(labels = dollar, n.breaks = 4) +
+  facet_wrap(~race, scales = "free_x") +
+  labs(y = "USD (Adjusted to 2016)",
+       x = NULL,
+       title = "A Story of Wealth Disparity in US",
+       subtitle = "<span style = 'color:#37739e;'>Average Retirement Savings</span> vs <span style = 'color:#f05454;'>Average Student Loan Debt</span>",
+       caption = "<br> Source: US Census & Urban Institute <br> Plot by: Luis Noguera <br> **#tidytuesday**") +
+  theme_minimal() +
+  theme_week7
+  
 
 ```
 
@@ -111,8 +151,10 @@ Save your image for sharing. Be sure to use the `#TidyTuesday` hashtag in your p
 ```{r}
 
 # This will save your most recent plot
-ggsave(
-  filename = "My TidyTuesday Plot.png",
+ggsave(wealth_income_plot,
+  filename = "Wealth Disparity.png",
+  width = 12,
+  height = 7,
   device = "png")
 
 ```
