@@ -10,6 +10,10 @@ Taking at least 45 to 60 minutes each week to work on this datasets.
 <div class="row"> 
   <div class="column">
   
+  **2021 - Week 8 - Dubois Visualization Style Challenge**
+  <a href="2021 - Week 8 - Dubois Style Challenge"><img src="2021 - Week 8 - Dubois Style Challenge/dubois.challenge.png"></a> 
+  
+  
   **2021 - Week 7 - Wealth and Income**
   <a href="2021 - Week 7 - Wealth and Income"><img src="2021 - Week 7 - Wealth and Income/Wealth Disparity.png"></a> 
   

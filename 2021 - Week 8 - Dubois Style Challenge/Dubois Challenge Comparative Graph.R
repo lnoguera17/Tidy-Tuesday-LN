@@ -29,7 +29,8 @@ theme_dubois <- theme(plot.background = element_rect(fill = "#ebd4b9"),
                       legend.key = element_blank(),
                       axis.title = element_text(family = font, size = 8),
                       panel.border = element_rect(colour = "black", fill=NA, size=0.2),
-                      axis.text = element_text(size = 16, family = font))
+                      axis.text = element_text(size = 16, family = font),
+                      plot.caption = element_markdown(size = 8, color = "black", family = font, hjust = 0.5))
 
 
 dubois.challenge <- georgia_pop %>% 
@@ -42,7 +43,8 @@ dubois.challenge <- georgia_pop %>%
   coord_flip() +
   labs(title = "COMPARATIVE INCREASE OF WHITE AND COLORED <br> POPULATION OF GEORGIA.",
        y = 'PERCENTS',
-       x = NULL) +
+       x = NULL,
+       caption = "\n\n **#tidytuesday** Week 8 | Plot: Luis Noguera |  Source: #DuBoisChallenge") +
   theme_dubois
 
 dubois.challenge
